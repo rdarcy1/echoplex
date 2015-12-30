@@ -104,12 +104,16 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    
+    ringBuf = Ringbuffer_create(1000);
 }
 
 void EchoplexAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    
+    Ringbuffer_destroy(ringBuf);
 }
 
 void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
@@ -162,6 +166,27 @@ int EchoplexAudioProcessor::mod(int a, int b)
 {
     int r = a%b;
     return (r<0 ? r+b : r);
+}
+
+// Create new ring buffer
+EchoplexAudioProcessor::RingBuffer *RingBuffer_create(int length)
+{
+        // Allocate memory for struct
+        EchoplexAudioProcessor::RingBuffer *new_buffer = new EchoplexAudioProcessor::RingBuffer;
+        new_buffer->length  = length;
+        
+        // Allocate memory for buffer array
+        new_buffer->buffer = new float[new_buffer->length];
+
+        new_buffer->current_index = 0;
+        
+        return new_buffer;
+}
+
+void EchoplexAudioProcessor::Ringbuffer_destroy(RingBuffer *buffer_to_destroy)
+{
+    delete[] buffer_to_destroy->buffer;
+    delete[] buffer_to_destroy;
 }
 
 //==============================================================================

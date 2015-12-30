@@ -58,6 +58,12 @@ public:
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     
+    typedef struct {
+        float *buffer;
+        int current_index;
+        int length;
+    } RingBuffer;
+    
     // Echoplex variables
     double feedback = 0.5;
     double mix = 1;
@@ -65,17 +71,20 @@ public:
     double filterCutoff = 1000;
     bool bypass = false;
     bool soundOnSound = false;
+    
+    
 
 private:
     //==============================================================================
     
     int mod (int, int);
     
-    typedef struct {
-        float *buffer;
-        int current_index;
-        int length;
-    } RingBuffer;
+    // Ring buffer operation functions
+    RingBuffer *Ringbuffer_create (int);
+    void Ringbuffer_destroy (RingBuffer *);
+    
+    // Ring buffer declaration
+    RingBuffer *ringBuf;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessor)
 };
