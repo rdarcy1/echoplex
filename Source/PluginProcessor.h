@@ -71,6 +71,12 @@ private:
     
     int mod (int, int);
     
+    typedef struct {
+        float *buffer;
+        int current_index;
+        int length;
+    } RingBuffer;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessor)
 };
 
