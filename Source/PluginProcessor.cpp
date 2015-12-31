@@ -110,15 +110,16 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
         // Create a ring buffer for each input channel
         int input_chans = getNumInputChannels();
         ringBuf = new RingBuffer[input_chans];
-        
+        Logger::outputDebugString("message");
         for (int channel = 0; channel < input_chans; ++channel)
         {
-            ringBuf[channel] = *ringbuffer_create(10000);
+            ringBuf[channel] = *ringbuffer_create(10001);
         }
     }
     catch (...)
     {
         NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Title", "Error");
+        
     }
 }
 
@@ -146,30 +147,44 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
     int delayed_sample_idx;
     double delayed_sample;
     double current_sample;
-    int delay_in_samples = 9999;
-    
+    double output_sample;
+    int target_delay = (int) delayTime * 100;
+    int actual_delay = target_delay;
 
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
     for (int channel = 0; channel < getNumInputChannels(); ++channel)
     {
-        mix = 1;
         for (int frame = 0; frame < buffer.getNumSamples(); ++frame)
         {
             float* channelData = buffer.getWritePointer (channel);
+            
+//            // Smoothly slide between delay times
+//            if (actual_delay < target_delay)
+//                actual_delay++;
+//            else if (actual_delay > target_delay)
+//                actual_delay--;
 
-            // ..do something to the data...
             // Read the delayed sampled from the circular buffer
-            delayed_sample_idx = mod ((ringBuf[channel].current_index)-delay_in_samples,ringBuf[channel].length);
+            delayed_sample_idx = mod ((ringBuf[channel].current_index)-target_delay,ringBuf[channel].length);
             delayed_sample = (ringBuf[channel].buffer)[delayed_sample_idx];
             
             
             // Write the current sample into the circular buffer
             current_sample = channelData[frame];
-            (ringBuf[channel].buffer)[ringBuf[channel].current_index] = current_sample;
             
             // Calculate the output sample value
-            channelData[frame] = 0.5 * (current_sample + (mix*delayed_sample));
+            output_sample = 0.5 * (current_sample + (mix*delayed_sample));
+            (ringBuf[channel].buffer)[ringBuf[channel].current_index] = current_sample;
+
+            
+            if (! bypass)
+            {
+                // If not bypassed, send output sample to audio output
+                channelData[frame] = output_sample;
+            }
+            
+            // Write the calculated sample back into the ring buffer with feedback
             
             // Increment the circular buffer index
             ringBuf[channel].current_index = ((ringBuf[channel].current_index)+1)%ringBuf[channel].length;

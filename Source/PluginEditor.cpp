@@ -53,7 +53,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     // Delay time
     addAndMakeVisible (delaySlider);
     delaySlider.setSliderStyle (Slider::Rotary);
-    delaySlider.setRange(0.0, 1.0);
+    delaySlider.setRange(0.0, 100);
     delaySlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     delaySlider.setPopupDisplayEnabled (true, this);
     delaySlider.setTextValueSuffix (" delay");
@@ -135,7 +135,6 @@ void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
     if (slider == &feedbackSlider)
     {
         processor.feedback = feedbackSlider.getValue();
-        NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Title", "Message in a box");
     }
     else if (slider == &mixSlider)
     {
