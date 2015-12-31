@@ -135,7 +135,7 @@ void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
     if (slider == &feedbackSlider)
     {
         processor.feedback = feedbackSlider.getValue();
-        juce::NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Title", "Message in a box");
+        NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Title", "Message in a box");
     }
     else if (slider == &mixSlider)
     {

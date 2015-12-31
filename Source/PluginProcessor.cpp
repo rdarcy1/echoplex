@@ -105,7 +105,21 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     
-    ringBuf = Ringbuffer_create(1000);
+    try
+    {
+        // Create a ring buffer for each input channel
+        int input_chans = getNumInputChannels();
+        ringBuf = new RingBuffer[input_chans];
+        
+        for (int channel = 0; channel < input_chans; ++channel)
+        {
+            ringBuf[channel] = *ringbuffer_create(10000);
+        }
+    }
+    catch (...)
+    {
+        NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Title", "Error");
+    }
 }
 
 void EchoplexAudioProcessor::releaseResources()
@@ -113,7 +127,9 @@ void EchoplexAudioProcessor::releaseResources()
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
     
-    Ringbuffer_destroy(ringBuf);
+//    ringbuffer_destroy(ringBuf);
+    
+    delete[] ringBuf;
 }
 
 void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
@@ -127,13 +143,37 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
     for (int i = getNumInputChannels(); i < getNumOutputChannels(); ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    int delayed_sample_idx;
+    double delayed_sample;
+    double current_sample;
+    int delay_in_samples = 9999;
+    
+
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
     for (int channel = 0; channel < getNumInputChannels(); ++channel)
     {
-        float* channelData = buffer.getWritePointer (channel);
-        mod(2,3);
-        // ..do something to the data...
+        mix = 1;
+        for (int frame = 0; frame < buffer.getNumSamples(); ++frame)
+        {
+            float* channelData = buffer.getWritePointer (channel);
+
+            // ..do something to the data...
+            // Read the delayed sampled from the circular buffer
+            delayed_sample_idx = mod ((ringBuf[channel].current_index)-delay_in_samples,ringBuf[channel].length);
+            delayed_sample = (ringBuf[channel].buffer)[delayed_sample_idx];
+            
+            
+            // Write the current sample into the circular buffer
+            current_sample = channelData[frame];
+            (ringBuf[channel].buffer)[ringBuf[channel].current_index] = current_sample;
+            
+            // Calculate the output sample value
+            channelData[frame] = 0.5 * (current_sample + (mix*delayed_sample));
+            
+            // Increment the circular buffer index
+            ringBuf[channel].current_index = ((ringBuf[channel].current_index)+1)%ringBuf[channel].length;
+        }
     }
 }
 
@@ -169,10 +209,10 @@ int EchoplexAudioProcessor::mod(int a, int b)
 }
 
 // Create new ring buffer
-EchoplexAudioProcessor::RingBuffer *RingBuffer_create(int length)
+EchoplexAudioProcessor::RingBuffer* EchoplexAudioProcessor::ringbuffer_create(int length)
 {
         // Allocate memory for struct
-        EchoplexAudioProcessor::RingBuffer *new_buffer = new EchoplexAudioProcessor::RingBuffer;
+        RingBuffer *new_buffer = new EchoplexAudioProcessor::RingBuffer;
         new_buffer->length  = length;
         
         // Allocate memory for buffer array
@@ -183,7 +223,7 @@ EchoplexAudioProcessor::RingBuffer *RingBuffer_create(int length)
         return new_buffer;
 }
 
-void EchoplexAudioProcessor::Ringbuffer_destroy(RingBuffer *buffer_to_destroy)
+void EchoplexAudioProcessor::ringbuffer_destroy(RingBuffer *buffer_to_destroy)
 {
     delete[] buffer_to_destroy->buffer;
     delete[] buffer_to_destroy;

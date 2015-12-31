@@ -80,12 +80,12 @@ private:
     int mod (int, int);
     
     // Ring buffer operation functions
-    RingBuffer *Ringbuffer_create (int);
-    void Ringbuffer_destroy (RingBuffer *);
+    RingBuffer *ringbuffer_create (int);
+    void ringbuffer_destroy (RingBuffer *);
     
     // Ring buffer declaration
     RingBuffer *ringBuf;
-    
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessor)
 };
 
