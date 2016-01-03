@@ -27,7 +27,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     feedbackSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     feedbackSlider.setPopupDisplayEnabled (true, this);
     feedbackSlider.setTextValueSuffix (" feedback");
-    feedbackSlider.setValue(1.0);
+    feedbackSlider.setValue(0);
     feedbackSlider.addListener (this);
     
     addAndMakeVisible (feedbackLabel);
@@ -57,7 +57,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     delaySlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     delaySlider.setPopupDisplayEnabled (true, this);
     delaySlider.setTextValueSuffix (" delay");
-    delaySlider.setValue(1.0);
+    delaySlider.setValue(90.0);
     delaySlider.addListener (this);
     
     addAndMakeVisible (delayLabel);
@@ -100,6 +100,16 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     SoSLabel.attachToComponent (&SoSButton, false);
     SoSLabel.setJustificationType(Justification::centredTop);
     
+    // Clip indicator
+    addAndMakeVisible (clipButton);
+    clipButton.setClickingTogglesState(true);
+    clipButton.addListener (this);
+    
+    addAndMakeVisible (delayLabel);
+    clipLabel.setText ("clip", dontSendNotification);
+    clipLabel.attachToComponent (&clipButton, false);
+    clipLabel.setJustificationType(Justification::centredTop);
+    
 }
 
 EchoplexAudioProcessorEditor::~EchoplexAudioProcessorEditor()
@@ -128,6 +138,7 @@ void EchoplexAudioProcessorEditor::resized()
     
     bypassButton.setBounds(20, 180, 80, 80);
     SoSButton.setBounds(120, 180, 80, 80);
+    clipButton.setBounds(220, 180, 80, 80);
 }
 
 void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
@@ -148,6 +159,7 @@ void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
     {
         processor.filterCutoff = cutoffSlider.getValue();
     }
+    
 }
 
 void EchoplexAudioProcessorEditor::buttonClicked (Button *button)
@@ -159,6 +171,10 @@ void EchoplexAudioProcessorEditor::buttonClicked (Button *button)
     else if (button == &SoSButton)
     {
         processor.soundOnSound = ! processor.soundOnSound;
+    }
+    else if (button == &clipButton)
+    {
+        clipButton.setState(Button::ButtonState::buttonNormal);
     }
 }
 

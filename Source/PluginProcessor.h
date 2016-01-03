@@ -72,6 +72,10 @@ public:
     bool bypass = false;
     bool soundOnSound = false;
     
+    // Output variables
+    float output_scale_factor = 0.3;
+    bool hasClipped = false;
+    
     
 
 private:
@@ -85,6 +89,8 @@ private:
     
     // Ring buffer declaration
     RingBuffer *ringBuf;
+    
+    float actual_delay;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessor)
 };

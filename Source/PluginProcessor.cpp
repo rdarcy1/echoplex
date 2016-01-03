@@ -105,12 +105,14 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     
+    Logger::outputDebugString("message");
+    
     try
     {
         // Create a ring buffer for each input channel
         int input_chans = getNumInputChannels();
         ringBuf = new RingBuffer[input_chans];
-        Logger::outputDebugString("message");
+
         for (int channel = 0; channel < input_chans; ++channel)
         {
             ringBuf[channel] = *ringbuffer_create(10001);
@@ -149,24 +151,26 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
     double current_sample;
     double output_sample;
     int target_delay = (int) delayTime * 100;
-    int actual_delay = target_delay;
+    float delay_step = 0.005;
+//    actual_delay = target_delay;
 
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
     for (int channel = 0; channel < getNumInputChannels(); ++channel)
     {
+        float* channelData = buffer.getWritePointer (channel);
+
         for (int frame = 0; frame < buffer.getNumSamples(); ++frame)
         {
-            float* channelData = buffer.getWritePointer (channel);
             
-//            // Smoothly slide between delay times
-//            if (actual_delay < target_delay)
-//                actual_delay++;
-//            else if (actual_delay > target_delay)
-//                actual_delay--;
+            // Smoothly slide between delay times
+            if (actual_delay < target_delay)
+                actual_delay += delay_step;
+            else if (actual_delay > target_delay)
+                actual_delay -= delay_step;
 
             // Read the delayed sampled from the circular buffer
-            delayed_sample_idx = mod ((ringBuf[channel].current_index)-target_delay,ringBuf[channel].length);
+            delayed_sample_idx = mod ((ringBuf[channel].current_index)-((int)actual_delay),ringBuf[channel].length);
             delayed_sample = (ringBuf[channel].buffer)[delayed_sample_idx];
             
             
@@ -174,17 +178,18 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
             current_sample = channelData[frame];
             
             // Calculate the output sample value
-            output_sample = 0.5 * (current_sample + (mix*delayed_sample));
-            (ringBuf[channel].buffer)[ringBuf[channel].current_index] = current_sample;
-
+            output_sample = current_sample + (mix*delayed_sample);
+            (ringBuf[channel].buffer)[ringBuf[channel].current_index] = current_sample + (feedback * output_sample);
             
             if (! bypass)
             {
                 // If not bypassed, send output sample to audio output
-                channelData[frame] = output_sample;
+                channelData[frame] = output_scale_factor * output_sample;
+                if (fabs(output_sample) > 1)
+                {
+                    hasClipped = true;
+                }
             }
-            
-            // Write the calculated sample back into the ring buffer with feedback
             
             // Increment the circular buffer index
             ringBuf[channel].current_index = ((ringBuf[channel].current_index)+1)%ringBuf[channel].length;
