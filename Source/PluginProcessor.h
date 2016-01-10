@@ -82,6 +82,7 @@ private:
     //==============================================================================
     
     int mod (int, int);
+    float lagrange_interpolate (float*, int, float);
     
     // Ring buffer operation functions
     RingBuffer *ringbuffer_create (int);
@@ -91,6 +92,9 @@ private:
     RingBuffer *ringBuf;
     
     float actual_delay;
+    
+    // Counter for interpolation
+    int sample_count = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessor)
 };

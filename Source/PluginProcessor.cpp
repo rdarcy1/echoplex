@@ -120,7 +120,7 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     }
     catch (...)
     {
-        NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Title", "Error");
+        NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Error", "Unable to allocate memory.");
         
     }
 }
@@ -146,12 +146,13 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
     for (int i = getNumInputChannels(); i < getNumOutputChannels(); ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    int delayed_sample_idx;
-    double delayed_sample;
-    double current_sample;
-    double output_sample;
-    int target_delay = (int) delayTime * 100;
-    float delay_step = 0.005;
+    float delayed_sample_idx;
+    float delayed_sample;
+    float current_sample;
+    float output_sample;
+    int target_delay = delayTime;
+    float delay_step = 0.01;
+    int samples_to_interpolate = 4;
 //    actual_delay = target_delay;
 
     // This is the place where you'd normally do the guts of your plugin's
@@ -163,6 +164,12 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
         for (int frame = 0; frame < buffer.getNumSamples(); ++frame)
         {
             
+//            if (sample_count < 4)
+//            {
+//                samples_to_interpolate = sample_count;
+//                sample_count++;
+//            }
+            
             // Smoothly slide between delay times
             if (actual_delay < target_delay)
                 actual_delay += delay_step;
@@ -170,15 +177,18 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
                 actual_delay -= delay_step;
 
             // Read the delayed sampled from the circular buffer
-            delayed_sample_idx = mod ((ringBuf[channel].current_index)-((int)actual_delay),ringBuf[channel].length);
-            delayed_sample = (ringBuf[channel].buffer)[delayed_sample_idx];
+            delayed_sample_idx = mod ((ringBuf[channel].current_index)-(actual_delay),ringBuf[channel].length);
+            
+            delayed_sample = lagrange_interpolate(ringBuf[channel].buffer + (int)delayed_sample_idx + 1, samples_to_interpolate, 3+fmod(delayed_sample_idx,1));
             
             
-            // Write the current sample into the circular buffer
+            // Read the current sample from input buffer
             current_sample = channelData[frame];
             
             // Calculate the output sample value
             output_sample = current_sample + (mix*delayed_sample);
+            
+            // Write current sample to ring buffer with feedback
             (ringBuf[channel].buffer)[ringBuf[channel].current_index] = current_sample + (feedback * output_sample);
             
             if (! bypass)
@@ -226,6 +236,33 @@ int EchoplexAudioProcessor::mod(int a, int b)
 {
     int r = a%b;
     return (r<0 ? r+b : r);
+}
+
+float EchoplexAudioProcessor::lagrange_interpolate (float *y, int n, float p)
+{
+    
+    // y is a pointer to the latest sample in the buffer
+    // n is the number of samples to interpolate over (from y[-n] to y[0])
+    // p is the x value to obtain the value of
+    
+    float sum = 0;
+    
+    for (int i=0; i < n; i++)
+    {
+        double temp = 1;
+        
+        for (int j=0; j < n; j++)
+        {
+            if (i==j)
+                continue;
+            else
+                temp *= ((p-j)/(i-j));
+        }
+        printf("%d\t%lf\n", i, temp);
+        sum += y[i - n] * temp;
+    }
+    
+    return sum;
 }
 
 // Create new ring buffer

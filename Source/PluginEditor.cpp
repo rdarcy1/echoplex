@@ -23,11 +23,11 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     // Feedback
     addAndMakeVisible (feedbackSlider);
     feedbackSlider.setSliderStyle (Slider::Rotary);
-    feedbackSlider.setRange(0.0, 1.0);
+    feedbackSlider.setRange(0.0, 0.8);
     feedbackSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     feedbackSlider.setPopupDisplayEnabled (true, this);
     feedbackSlider.setTextValueSuffix (" feedback");
-    feedbackSlider.setValue(0);
+    feedbackSlider.setValue(processor.feedback);
     feedbackSlider.addListener (this);
     
     addAndMakeVisible (feedbackLabel);
@@ -42,7 +42,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     mixSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     mixSlider.setPopupDisplayEnabled (true, this);
     mixSlider.setTextValueSuffix (" mix");
-    mixSlider.setValue(1.0);
+    mixSlider.setValue(processor.mix);
     mixSlider.addListener (this);
     
     addAndMakeVisible (mixLabel);
@@ -53,11 +53,11 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     // Delay time
     addAndMakeVisible (delaySlider);
     delaySlider.setSliderStyle (Slider::Rotary);
-    delaySlider.setRange(0.0, 100);
+    delaySlider.setRange(0.0, 10000);
     delaySlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     delaySlider.setPopupDisplayEnabled (true, this);
     delaySlider.setTextValueSuffix (" delay");
-    delaySlider.setValue(90.0);
+    delaySlider.setValue(processor.delayTime);
     delaySlider.addListener (this);
     
     addAndMakeVisible (delayLabel);
@@ -72,7 +72,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     cutoffSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     cutoffSlider.setPopupDisplayEnabled (true, this);
     cutoffSlider.setTextValueSuffix (" cutoff");
-    cutoffSlider.setValue(1.0);
+    cutoffSlider.setValue(processor.filterCutoff);
     cutoffSlider.addListener (this);
     
     addAndMakeVisible (cutoffLabel);
