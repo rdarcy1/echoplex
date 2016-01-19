@@ -68,7 +68,9 @@ public:
     double feedback = 0.5;
     double mix = 1;
     double delayTime = 50;
+    
     double filterCutoff = 1000;
+    
     bool bypass = false;
     bool soundOnSound = false;
     
@@ -95,6 +97,14 @@ private:
     
     // Counter for interpolation
     int sample_count = 0;
+    
+    // Filter coefficients
+    static const int filterOrder = 126;
+    float filter_coeffs[126];
+    void calculate_filter_coeffs (float *, float);
+    
+    // Maths functions
+    float sinc (float);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessor)
 };

@@ -105,8 +105,6 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     
-    Logger::outputDebugString("message");
-    
     try
     {
         // Create a ring buffer for each input channel
@@ -117,12 +115,16 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
         {
             ringBuf[channel] = *ringbuffer_create(10001);
         }
+        
+
     }
     catch (...)
     {
         NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Error", "Unable to allocate memory.");
         
     }
+    
+    calculate_filter_coeffs(filter_coeffs, filterCutoff);
 }
 
 void EchoplexAudioProcessor::releaseResources()
@@ -153,6 +155,7 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
     int target_delay = delayTime;
     float delay_step = 0.01;
     int samples_to_interpolate = 4;
+    
 //    actual_delay = target_delay;
 
     // This is the place where you'd normally do the guts of your plugin's
@@ -164,12 +167,6 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
         for (int frame = 0; frame < buffer.getNumSamples(); ++frame)
         {
             
-//            if (sample_count < 4)
-//            {
-//                samples_to_interpolate = sample_count;
-//                sample_count++;
-//            }
-            
             // Smoothly slide between delay times
             if (actual_delay < target_delay)
                 actual_delay += delay_step;
@@ -179,8 +176,15 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
             // Read the delayed sampled from the circular buffer
             delayed_sample_idx = mod ((ringBuf[channel].current_index)-(actual_delay),ringBuf[channel].length);
             
+            // SORT THIS OUT
             delayed_sample = lagrange_interpolate(ringBuf[channel].buffer + (int)delayed_sample_idx + 1, samples_to_interpolate, 3+fmod(delayed_sample_idx,1));
             
+            // Apply filter to delayed sample
+            // First coeff is a special case as the delayed sample is interpolated
+            delayed_sample *= filter_coeffs[0];
+            for (int x = 1; x <= filterOrder; x++) {
+                delayed_sample += filter_coeffs[x] * ringBuf[channel].buffer[mod(delayed_sample_idx - x, ringBuf[channel].length)];
+            }
             
             // Read the current sample from input buffer
             current_sample = channelData[frame];
@@ -199,6 +203,8 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
                 {
                     hasClipped = true;
                 }
+                
+                printf("%d\t%f\n",channel,channelData[frame]);
             }
             
             // Increment the circular buffer index
@@ -258,7 +264,7 @@ float EchoplexAudioProcessor::lagrange_interpolate (float *y, int n, float p)
             else
                 temp *= ((p-j)/(i-j));
         }
-        printf("%d\t%lf\n", i, temp);
+
         sum += y[i - n] * temp;
     }
     
@@ -280,10 +286,34 @@ EchoplexAudioProcessor::RingBuffer* EchoplexAudioProcessor::ringbuffer_create(in
         return new_buffer;
 }
 
+void EchoplexAudioProcessor::calculate_filter_coeffs (float* filter_coefficients, float cutoff)
+{
+    float window_coefficient;
+    float fourier_coefficient;
+    double sample_rate = getSampleRate();
+
+    for (int x = 0; x < filterOrder; x++)
+    {
+        // Hamming window
+        window_coefficient = 0.54 - 0.46 * cos((2*M_PI*x)/filterOrder);
+        
+        fourier_coefficient = ((2*cutoff)/sample_rate) * sinc(((2*x - filterOrder)*cutoff)/sample_rate);
+        
+        filter_coefficients[x] = window_coefficient * fourier_coefficient;
+        
+        printf("%f",filter_coefficients[x]);
+    }
+}
+
 void EchoplexAudioProcessor::ringbuffer_destroy(RingBuffer *buffer_to_destroy)
 {
     delete[] buffer_to_destroy->buffer;
     delete[] buffer_to_destroy;
+}
+
+float EchoplexAudioProcessor::sinc (float x)
+{
+    return x ? sin(M_PI*x)/(M_PI*x) : 1;
 }
 
 //==============================================================================
