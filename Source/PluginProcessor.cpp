@@ -109,11 +109,18 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     {
         // Create a ring buffer for each input channel
         int input_chans = getNumInputChannels();
-        ringBuf = new RingBuffer[input_chans];
+//        ringBuf = new RingBuffer[input_chans];
+        ringBuf.resize(input_chans);
 
         for (int channel = 0; channel < input_chans; ++channel)
         {
-            ringBuf[channel] = *ringbuffer_create(10001);
+//            ringBuf[channel] = *ringbuffer_create(getSampleRate() * 2);
+            ringBuf[channel].length = getSampleRate() * 2;
+            ringBuf[channel].buffer.resize(ringBuf[channel].length, 0.0);
+            //ringBuf[channel].buffer[n];
+            if (ringBuf[channel].buffer.size() < ringBuf[channel].length)
+            {
+            }
         }
         
 
@@ -134,7 +141,7 @@ void EchoplexAudioProcessor::releaseResources()
     
 //    ringbuffer_destroy(ringBuf);
     
-    delete[] ringBuf;
+//    delete[] ringBuf;
 }
 
 void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
@@ -174,10 +181,10 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
                 actual_delay -= delay_step;
 
             // Read the delayed sampled from the circular buffer
-            delayed_sample_idx = mod ((ringBuf[channel].current_index)-(actual_delay),ringBuf[channel].length);
+            delayed_sample_idx = mod (round((ringBuf[channel].current_index)-(actual_delay)),ringBuf[channel].length);
             
             // SORT THIS OUT
-            delayed_sample = lagrange_interpolate(ringBuf[channel].buffer + (int)delayed_sample_idx + 1, samples_to_interpolate, 3+fmod(delayed_sample_idx,1));
+            delayed_sample = lagrange_interpolate(channel, (int)delayed_sample_idx + 1, samples_to_interpolate, 3+fmod(delayed_sample_idx,1));
             
             // Apply filter to delayed sample
             // First coeff is a special case as the delayed sample is interpolated
@@ -192,18 +199,20 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
             // Calculate the output sample value
             output_sample = current_sample + (mix*delayed_sample);
             
+            // If sound on sound mode is off, clear the current buffer sample
+            if (! soundOnSound)
+            {
+                (ringBuf[channel].buffer)[ringBuf[channel].current_index] = 0;
+            }
+            
             // Write current sample to ring buffer with feedback
-            (ringBuf[channel].buffer)[ringBuf[channel].current_index] = current_sample + (feedback * output_sample);
+            (ringBuf[channel].buffer)[ringBuf[channel].current_index] += current_sample + (feedback * output_sample);
             
             if (! bypass)
             {
                 // If not bypassed, send output sample to audio output
                 channelData[frame] = output_scale_factor * output_sample;
-                if (fabs(output_sample) > 1)
-                {
-                    hasClipped = true;
-                }
-                
+            } else {
                 printf("%d\t%f\n",channel,channelData[frame]);
             }
             
@@ -244,7 +253,7 @@ int EchoplexAudioProcessor::mod(int a, int b)
     return (r<0 ? r+b : r);
 }
 
-float EchoplexAudioProcessor::lagrange_interpolate (float *y, int n, float p)
+float EchoplexAudioProcessor::lagrange_interpolate (int channel, int idx, int n, float p)
 {
     
     // y is a pointer to the latest sample in the buffer
@@ -265,26 +274,26 @@ float EchoplexAudioProcessor::lagrange_interpolate (float *y, int n, float p)
                 temp *= ((p-j)/(i-j));
         }
 
-        sum += y[i - n] * temp;
+        sum += ringBuf[channel].buffer[idx + i - n] * temp;
     }
     
     return sum;
 }
-
-// Create new ring buffer
-EchoplexAudioProcessor::RingBuffer* EchoplexAudioProcessor::ringbuffer_create(int length)
-{
-        // Allocate memory for struct
-        RingBuffer *new_buffer = new EchoplexAudioProcessor::RingBuffer;
-        new_buffer->length  = length;
-        
-        // Allocate memory for buffer array
-        new_buffer->buffer = new float[new_buffer->length];
-
-        new_buffer->current_index = 0;
-        
-        return new_buffer;
-}
+//
+//// Create new ring buffer
+//EchoplexAudioProcessor::RingBuffer* EchoplexAudioProcessor::ringbuffer_create(int length)
+//{
+//        // Allocate memory for struct
+//        RingBuffer *new_buffer = new EchoplexAudioProcessor::RingBuffer;
+//        new_buffer->length  = length;
+//        
+//        // Allocate memory for buffer array
+////        new_buffer->buffer = new float[new_buffer->length];
+//
+//        new_buffer->current_index = 0;
+//        
+//        return new_buffer;
+//}
 
 void EchoplexAudioProcessor::calculate_filter_coeffs (float* filter_coefficients, float cutoff)
 {
@@ -305,11 +314,11 @@ void EchoplexAudioProcessor::calculate_filter_coeffs (float* filter_coefficients
     }
 }
 
-void EchoplexAudioProcessor::ringbuffer_destroy(RingBuffer *buffer_to_destroy)
-{
-    delete[] buffer_to_destroy->buffer;
-    delete[] buffer_to_destroy;
-}
+//void EchoplexAudioProcessor::ringbuffer_destroy(RingBuffer *buffer_to_destroy)
+//{
+//    delete[] buffer_to_destroy->buffer;
+//    delete[] buffer_to_destroy;
+//}
 
 float EchoplexAudioProcessor::sinc (float x)
 {

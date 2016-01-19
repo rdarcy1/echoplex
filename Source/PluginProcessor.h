@@ -12,6 +12,7 @@
 #define PLUGINPROCESSOR_H_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include <vector>
 
 
 //==============================================================================
@@ -59,8 +60,8 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     
     typedef struct {
-        float *buffer;
-        int current_index;
+        std::vector<float> buffer;
+        int current_index=0;
         int length;
     } RingBuffer;
     
@@ -84,14 +85,15 @@ private:
     //==============================================================================
     
     int mod (int, int);
-    float lagrange_interpolate (float*, int, float);
+    float lagrange_interpolate (int, int, int, float);
     
     // Ring buffer operation functions
     RingBuffer *ringbuffer_create (int);
     void ringbuffer_destroy (RingBuffer *);
     
     // Ring buffer declaration
-    RingBuffer *ringBuf;
+//    RingBuffer *ringBuf;
+    std::vector<RingBuffer> ringBuf;
     
     float actual_delay;
     
