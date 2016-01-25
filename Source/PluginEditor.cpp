@@ -18,7 +18,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (630, 300);
+    setSize (630, 350);
     
     // Feedback
     addAndMakeVisible (feedbackSlider);
@@ -42,7 +42,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     mixSlider.addListener (this);
     
     addAndMakeVisible (mixLabel);
-    mixLabel.setText ("Dry / Wet", dontSendNotification);
+    mixLabel.setText ("Mix", dontSendNotification);
     mixLabel.attachToComponent (&mixSlider, false);
     mixLabel.setJustificationType(Justification::centredTop);
     
@@ -68,6 +68,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     cutoffSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     cutoffSlider.setPopupDisplayEnabled (true, this);
     cutoffSlider.setTextValueSuffix (" Hz");
+    cutoffSlider.setSkewFactorFromMidPoint (4000);
     cutoffSlider.setValue(processor.filterCutoff);
     cutoffSlider.addListener (this);
     
@@ -110,7 +111,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     bypassButton.addListener (this);
     
     addAndMakeVisible (delayLabel);
-    bypassLabel.setText ("Bypass", dontSendNotification);
+    bypassLabel.setText ("Plugin Bypass", dontSendNotification);
     bypassLabel.attachToComponent (&bypassButton, false);
     bypassLabel.setJustificationType(Justification::centredTop);
     
@@ -123,6 +124,16 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     SoSLabel.setText ("SoS", dontSendNotification);
     SoSLabel.attachToComponent (&SoSButton, false);
     SoSLabel.setJustificationType(Justification::centredTop);
+    
+    // Disable Write Button
+    addAndMakeVisible (writeButton);
+    writeButton.setClickingTogglesState(true);
+    writeButton.addListener (this);
+    
+    addAndMakeVisible (writeLabel);
+    writeLabel.setText ("Disable Write", dontSendNotification);
+    writeLabel.attachToComponent (&writeButton, false);
+    writeLabel.setJustificationType(Justification::centredTop);
     
     // Filter bypass
     addAndMakeVisible (filterButton);
@@ -172,6 +183,11 @@ void EchoplexAudioProcessorEditor::paint (Graphics& g)
     
     g.setFont (Font ("helveticaNeue", 15.0f, Font::plain));
     g.drawFittedText ("Robin D'Arcy", 0, 35, 650, 20, Justification::centredTop, 0);
+    
+    g.setFont (Font ("helveticaNeue", 10.0f, Font::plain));
+    g.drawFittedText ("Dry", 120, 160, 50, 20, Justification::topLeft, 0);
+    g.drawFittedText ("Wet", 180, 160, 50, 20, Justification::topLeft, 0);
+    g.drawFittedText ("Use with SoS for loop", 210, 310, 120, 20, Justification::topLeft, 0);
 
 }
 
@@ -187,11 +203,12 @@ void EchoplexAudioProcessorEditor::resized()
     saturationSlider.setBounds(420, 80, 80, 80);
     noiseSlider.setBounds(520, 80, 80, 80);
     
-    bypassButton.setBounds(20, 180, 80, 80);
-    SoSButton.setBounds(120, 180, 80, 80);
-    filterButton.setBounds(320, 180, 80, 80);
-    saturationButton.setBounds(420, 180, 80, 80);
-    noiseButton.setBounds(520, 180, 80, 80);
+    bypassButton.setBounds(20, 220, 80, 80);
+    SoSButton.setBounds(120, 220, 80, 80);
+    writeButton.setBounds(220, 220, 80, 80);
+    filterButton.setBounds(320, 220, 80, 80);
+    saturationButton.setBounds(420, 220, 80, 80);
+    noiseButton.setBounds(520, 220, 80, 80);
 
 }
 
@@ -248,6 +265,10 @@ void EchoplexAudioProcessorEditor::buttonClicked (Button *button)
     else if (button == &noiseButton)
     {
         processor.noise_in = ! processor.noise_in;
+    }
+    else if (button == &writeButton)
+    {
+        processor.disable_write = ! processor.disable_write;
     }
 }
 

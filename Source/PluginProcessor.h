@@ -65,6 +65,10 @@ public:
         int length;
     } RingBuffer;
     
+    typedef struct {
+        double b0, b1, b2, a0, a1, a2;
+    } biquadCoeffs;
+    
     // Echoplex variables
     double feedback = 0.5;
     float mix = 0;
@@ -73,7 +77,9 @@ public:
     float delay_in_samples = 5000;
     int max_delay_time;
     
-    double filterCutoff = 1000;
+    bool disable_write = false;
+    
+    float filterCutoff = 1000;
     bool filterIsIn = true;
     
     float saturation = 5;
@@ -104,6 +110,7 @@ private:
     std::vector<RingBuffer> ringBuf;
     
     float actual_delay;
+    float actual_cutoff;
     
     // Counter for interpolation
     int sample_count = 0;
@@ -112,6 +119,7 @@ private:
     static const int filterOrder = 126;
     float filter_coeffs[126];
     void calculate_filter_coeffs (float);
+    
 
     // Intepolation function
     float lagrange_interpolate (int, int, int, float);
@@ -120,7 +128,6 @@ private:
     
     // Maths functions
     float sinc (float);
-    int sign (float);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessor)
 };

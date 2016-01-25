@@ -113,7 +113,7 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
 
     for (int channel = 0; channel < input_chans; ++channel)
     {
-        ringBuf[channel].length = max_delay_time + 1;
+        ringBuf[channel].length = max_delay_time * 4;
         ringBuf[channel].buffer.resize(ringBuf[channel].length, 0.0);
 
         if (ringBuf[channel].buffer.size() < ringBuf[channel].length)
@@ -152,8 +152,11 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
     int samples_to_interpolate = 4;
     
     float previousDelay;
+    float previousCutoff;
     static int delay_change_counter = 0;
+    static int cutoff_change_counter = 0;
     int param_change_sample_delay = 10000;
+    int cutoff_change_sample_delay = 1000;
     
 
     // This is the place where you'd normally do the guts of your plugin's
@@ -165,10 +168,9 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
         for (int frame = 0; frame < buffer.getNumSamples(); ++frame)
         {
             
-            // Detect change in parameters to prevent glitches
+            // Detect change in delay slider to prevent glitches
             if (actual_delay != delay_in_samples)
             {
-                
                 if (previousDelay == delay_in_samples)
                 {
                     delay_change_counter++;
@@ -176,20 +178,38 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
                     {
                         actual_delay = delay_in_samples;
                     }
-
                 }
                 else
                 {
                     delay_change_counter = 0;
                 }
-                
                 previousDelay = delay_in_samples;
+            }
+            
+            
+            // Detect change in filter slider to prevent glitches
+            if (actual_cutoff != filterCutoff)
+            {
+                if (previousCutoff == filterCutoff)
+                {
+                    cutoff_change_counter++;
+                    if (cutoff_change_counter >= cutoff_change_sample_delay)
+                    {
+                        calculate_filter_coeffs(filterCutoff);
+                        actual_cutoff = filterCutoff;
+                    }
+                }
+                else
+                {
+                    cutoff_change_counter = 0;
+                }
+                previousCutoff = filterCutoff;
             }
 
             // Read the delayed sampled from the circular buffer
             delayed_sample_idx = mod (round((ringBuf[channel].current_index)-(actual_delay)),ringBuf[channel].length);
             
-            // SORT THIS OUT
+            // Interpolate to find delayed sample
             delayed_sample = lagrange_interpolate(channel, (int)delayed_sample_idx + 1, samples_to_interpolate, 3+fmod(delayed_sample_idx,1));
 
             // Saturation
@@ -230,9 +250,10 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
             
             
             // Write current sample to ring buffer with feedback
-            (ringBuf[channel].buffer)[ringBuf[channel].current_index] += current_sample + (feedback * output_sample_feedback);
-            
-            
+            if (! disable_write)
+            {
+                (ringBuf[channel].buffer)[ringBuf[channel].current_index] += current_sample + (feedback * output_sample_feedback);
+            }
             
             // Noise
             if (noise_in)
@@ -327,6 +348,7 @@ void EchoplexAudioProcessor::calculate_filter_coeffs (float cutoff)
         filter_coeffs[x] = window_coefficient * fourier_coefficient;
         
     }
+    
 }
 
 float EchoplexAudioProcessor::sinc (float x)
@@ -341,13 +363,3 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new EchoplexAudioProcessor();
 }
 
-int EchoplexAudioProcessor::sign (float x)
-{
-    if (x > 0) {
-        return 1;
-    } else if (x < 0) {
-        return -1;
-    } else {
-        return 0;
-    }
-}

@@ -61,6 +61,9 @@ private:
     TextButton SoSButton;
     Label SoSLabel;
     
+    TextButton writeButton;
+    Label writeLabel;
+    
     TextButton filterButton;
     Label filterLabel;
     
