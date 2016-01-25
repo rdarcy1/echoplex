@@ -101,11 +101,7 @@ private:
     //==============================================================================
     
     int mod (int, int);
-    
-    // Ring buffer operation functions
-    RingBuffer *ringbuffer_create (int);
-    void ringbuffer_destroy (RingBuffer *);
-    
+        
     // Ring buffer declaration
     std::vector<RingBuffer> ringBuf;
     
@@ -120,11 +116,8 @@ private:
     float filter_coeffs[126];
     void calculate_filter_coeffs (float);
     
-
     // Intepolation function
     float lagrange_interpolate (int, int, int, float);
-
-
     
     // Maths functions
     float sinc (float);

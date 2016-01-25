@@ -11,13 +11,14 @@
               pluginAAXCategory="AAX_ePlugInCategory_Dynamics" jucerVersion="4.0.2">
   <MAINGROUP id="g0HVK6" name="Echoplex">
     <GROUP id="{49A8C59A-07C2-CB2C-5E93-C6C2767D03B7}" name="Source">
-      <FILE id="T5jT2J" name="PluginProcessor.cpp" compile="1" resource="0"
-            file="Source/PluginProcessor.cpp"/>
-      <FILE id="JCL14i" name="PluginProcessor.h" compile="0" resource="0"
-            file="Source/PluginProcessor.h"/>
-      <FILE id="SDgmcc" name="PluginEditor.cpp" compile="1" resource="0"
-            file="Source/PluginEditor.cpp"/>
-      <FILE id="RR7d51" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="T5jT2J" name="cw3_RobinDArcyPluginProcessor.cpp" compile="1"
+            resource="0" file="Source/cw3_RobinDArcyPluginProcessor.cpp"/>
+      <FILE id="JCL14i" name="cw3_RobinDArcyPluginProcessor.h" compile="0"
+            resource="0" file="Source/cw3_RobinDArcyPluginProcessor.h"/>
+      <FILE id="SDgmcc" name="cw3_RobinDArcyPluginEditor.cpp" compile="1"
+            resource="0" file="Source/cw3_RobinDArcyPluginEditor.cpp"/>
+      <FILE id="RR7d51" name="cw3_RobinDArcyPluginEditor.h" compile="0" resource="0"
+            file="Source/cw3_RobinDArcyPluginEditor.h"/>
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>

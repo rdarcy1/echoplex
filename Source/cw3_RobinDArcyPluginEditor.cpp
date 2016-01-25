@@ -8,8 +8,8 @@
   ==============================================================================
 */
 
-#include "PluginProcessor.h"
-#include "PluginEditor.h"
+#include "cw3_RobinDArcyPluginProcessor.h"
+#include "cw3_RobinDArcyPluginEditor.h"
 
 
 //==============================================================================
