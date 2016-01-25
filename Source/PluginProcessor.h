@@ -79,6 +79,9 @@ public:
     float saturation = 5;
     bool saturation_active = false;
     
+    float noiseAmount = 0.015;
+    bool noise_in = false;
+    
     bool bypass = false;
     bool soundOnSound = false;
     

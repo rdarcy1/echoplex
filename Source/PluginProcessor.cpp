@@ -192,6 +192,11 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
             // SORT THIS OUT
             delayed_sample = lagrange_interpolate(channel, (int)delayed_sample_idx + 1, samples_to_interpolate, 3+fmod(delayed_sample_idx,1));
 
+            // Saturation
+            if (saturation_active)
+            {
+                delayed_sample = (1/saturation) * atan(saturation*delayed_sample);
+            }
             
             // Read the current sample from input buffer
             current_sample = channelData[frame];
@@ -222,13 +227,17 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
             
             output_sample_feedback = (dry_mix*current_sample) + (wet_mix*delayed_sample);
             
+            
+            
             // Write current sample to ring buffer with feedback
             (ringBuf[channel].buffer)[ringBuf[channel].current_index] += current_sample + (feedback * output_sample_feedback);
             
-            // Saturation
-            if (saturation_active)
+            
+            
+            // Noise
+            if (noise_in)
             {
-                output_sample = (1/saturation) * atan(saturation*output_sample);
+                output_sample += noiseAmount * ((rand() % 1000) / 500. - 1);
             }
             
             // Audio output

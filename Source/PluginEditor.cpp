@@ -18,15 +18,13 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (600, 450);
+    setSize (630, 300);
     
     // Feedback
     addAndMakeVisible (feedbackSlider);
     feedbackSlider.setSliderStyle (Slider::Rotary);
     feedbackSlider.setRange(0.0, 0.8);
     feedbackSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
-    feedbackSlider.setPopupDisplayEnabled (true, this);
-    feedbackSlider.setTextValueSuffix (" feedback");
     feedbackSlider.setValue(processor.feedback);
     feedbackSlider.addListener (this);
     
@@ -40,13 +38,11 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     mixSlider.setSliderStyle (Slider::Rotary);
     mixSlider.setRange(-1.0, 1.0);
     mixSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
-    mixSlider.setPopupDisplayEnabled (true, this);
-    mixSlider.setTextValueSuffix (" mix");
     mixSlider.setValue(processor.mix);
     mixSlider.addListener (this);
     
     addAndMakeVisible (mixLabel);
-    mixLabel.setText ("Mix", dontSendNotification);
+    mixLabel.setText ("Dry / Wet", dontSendNotification);
     mixLabel.attachToComponent (&mixSlider, false);
     mixLabel.setJustificationType(Justification::centredTop);
     
@@ -80,20 +76,33 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     cutoffLabel.attachToComponent (&cutoffSlider, false);
     cutoffLabel.setJustificationType(Justification::centredTop);
     
-    // Saturation
+    // Saturation amount
     addAndMakeVisible (saturationSlider);
     saturationSlider.setSliderStyle (Slider::Rotary);
     saturationSlider.setRange(1, 50);
+    saturationSlider.setSkewFactorFromMidPoint (10);
     saturationSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
-    saturationSlider.setPopupDisplayEnabled (true, this);
-    saturationSlider.setTextValueSuffix (" Hz");
     saturationSlider.setValue(processor.saturation);
     saturationSlider.addListener (this);
     
     addAndMakeVisible (saturationLabel);
-    saturationLabel.setText ("Saturation Amount", dontSendNotification);
+    saturationLabel.setText ("Saturation", dontSendNotification);
     saturationLabel.attachToComponent (&saturationSlider, false);
     saturationLabel.setJustificationType(Justification::centredTop);
+    
+    // Noise amount
+    addAndMakeVisible (noiseSlider);
+    noiseSlider.setSliderStyle (Slider::Rotary);
+    noiseSlider.setRange(0, 0.3);
+    noiseSlider.setSkewFactorFromMidPoint (0.06);
+    noiseSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
+    noiseSlider.setValue(processor.noiseAmount);
+    noiseSlider.addListener (this);
+    
+    addAndMakeVisible (noiseLabel);
+    noiseLabel.setText ("Noise", dontSendNotification);
+    noiseLabel.attachToComponent (&noiseSlider, false);
+    noiseLabel.setJustificationType(Justification::centredTop);
     
     // Bypass Button
     addAndMakeVisible (bypassButton);
@@ -135,6 +144,16 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     saturationButtonLabel.attachToComponent (&saturationButton, false);
     saturationButtonLabel.setJustificationType(Justification::centredTop);
     
+    // Noise Button
+    addAndMakeVisible (noiseButton);
+    noiseButton.setClickingTogglesState(true);
+    noiseButton.addListener (this);
+    
+    addAndMakeVisible (noiseButtonLabel);
+    noiseButtonLabel.setText ("Noise In", dontSendNotification);
+    noiseButtonLabel.attachToComponent (&noiseButton, false);
+    noiseButtonLabel.setJustificationType(Justification::centredTop);
+    
 }
 
 EchoplexAudioProcessorEditor::~EchoplexAudioProcessorEditor()
@@ -144,11 +163,16 @@ EchoplexAudioProcessorEditor::~EchoplexAudioProcessorEditor()
 //==============================================================================
 void EchoplexAudioProcessorEditor::paint (Graphics& g)
 {
-    g.fillAll (Colours::white);
+    g.fillAll (Colours::lightgrey);
 
     g.setColour (Colours::black);
-    g.setFont (25.0f);
-    g.drawFittedText ("Echoplex", getLocalBounds(), Justification::centredTop, 1);
+    
+    g.setFont (Font ("helveticaNeue", 20.0f, Font::bold));
+    g.drawFittedText ("Echoplex", 0, 10, 650, 20, Justification::centredTop, 0);
+    
+    g.setFont (Font ("helveticaNeue", 15.0f, Font::plain));
+    g.drawFittedText ("Robin D'Arcy", 0, 35, 650, 20, Justification::centredTop, 0);
+
 }
 
 void EchoplexAudioProcessorEditor::resized()
@@ -161,11 +185,14 @@ void EchoplexAudioProcessorEditor::resized()
     delaySlider.setBounds(220, 80, 80, 80);
     cutoffSlider.setBounds(320, 80, 80, 80);
     saturationSlider.setBounds(420, 80, 80, 80);
+    noiseSlider.setBounds(520, 80, 80, 80);
     
     bypassButton.setBounds(20, 180, 80, 80);
     SoSButton.setBounds(120, 180, 80, 80);
-    filterButton.setBounds(220, 180, 80, 80);
-    saturationButton.setBounds(320, 180, 80, 80);
+    filterButton.setBounds(320, 180, 80, 80);
+    saturationButton.setBounds(420, 180, 80, 80);
+    noiseButton.setBounds(520, 180, 80, 80);
+
 }
 
 void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
@@ -193,6 +220,10 @@ void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
     {
         processor.saturation = saturationSlider.getValue();
     }
+    else if (slider == &noiseSlider)
+    {
+        processor.noiseAmount = noiseSlider.getValue();
+    }
     
 }
 
@@ -213,6 +244,10 @@ void EchoplexAudioProcessorEditor::buttonClicked (Button *button)
     else if (button == &saturationButton)
     {
         processor.saturation_active = ! processor.saturation_active;
+    }
+    else if (button == &noiseButton)
+    {
+        processor.noise_in = ! processor.noise_in;
     }
 }
 

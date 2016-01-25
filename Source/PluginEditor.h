@@ -52,6 +52,9 @@ private:
     Slider saturationSlider;
     Label saturationLabel;
     
+    Slider noiseSlider;
+    Label noiseLabel;
+    
     TextButton bypassButton;
     Label bypassLabel;
 
@@ -63,6 +66,9 @@ private:
     
     TextButton saturationButton;
     Label saturationButtonLabel;
+    
+    TextButton noiseButton;
+    Label noiseButtonLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessorEditor)
 };
