@@ -76,6 +76,9 @@ public:
     double filterCutoff = 1000;
     bool filterIsIn = true;
     
+    float saturation = 5;
+    bool saturation_active = false;
+    
     bool bypass = false;
     bool soundOnSound = false;
     
@@ -95,7 +98,6 @@ private:
     void ringbuffer_destroy (RingBuffer *);
     
     // Ring buffer declaration
-//    RingBuffer *ringBuf;
     std::vector<RingBuffer> ringBuf;
     
     float actual_delay;
@@ -115,6 +117,7 @@ private:
     
     // Maths functions
     float sinc (float);
+    int sign (float);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessor)
 };

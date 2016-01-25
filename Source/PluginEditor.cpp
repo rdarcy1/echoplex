@@ -80,6 +80,21 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     cutoffLabel.attachToComponent (&cutoffSlider, false);
     cutoffLabel.setJustificationType(Justification::centredTop);
     
+    // Saturation
+    addAndMakeVisible (saturationSlider);
+    saturationSlider.setSliderStyle (Slider::Rotary);
+    saturationSlider.setRange(1, 50);
+    saturationSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
+    saturationSlider.setPopupDisplayEnabled (true, this);
+    saturationSlider.setTextValueSuffix (" Hz");
+    saturationSlider.setValue(processor.saturation);
+    saturationSlider.addListener (this);
+    
+    addAndMakeVisible (saturationLabel);
+    saturationLabel.setText ("Saturation Amount", dontSendNotification);
+    saturationLabel.attachToComponent (&saturationSlider, false);
+    saturationLabel.setJustificationType(Justification::centredTop);
+    
     // Bypass Button
     addAndMakeVisible (bypassButton);
     bypassButton.setClickingTogglesState(true);
@@ -95,12 +110,12 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     SoSButton.setClickingTogglesState(true);
     SoSButton.addListener (this);
     
-    addAndMakeVisible (delayLabel);
+    addAndMakeVisible (SoSLabel);
     SoSLabel.setText ("SoS", dontSendNotification);
     SoSLabel.attachToComponent (&SoSButton, false);
     SoSLabel.setJustificationType(Justification::centredTop);
     
-    // Clip indicator
+    // Filter bypass
     addAndMakeVisible (filterButton);
     filterButton.setClickingTogglesState(true);
     filterButton.addListener (this);
@@ -109,6 +124,16 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     filterLabel.setText ("Filter Bypass", dontSendNotification);
     filterLabel.attachToComponent (&filterButton, false);
     filterLabel.setJustificationType(Justification::centredTop);
+    
+    // Saturation
+    addAndMakeVisible (saturationButton);
+    saturationButton.setClickingTogglesState(true);
+    saturationButton.addListener (this);
+    
+    addAndMakeVisible (saturationButtonLabel);
+    saturationButtonLabel.setText ("Saturation In", dontSendNotification);
+    saturationButtonLabel.attachToComponent (&saturationButton, false);
+    saturationButtonLabel.setJustificationType(Justification::centredTop);
     
 }
 
@@ -135,10 +160,12 @@ void EchoplexAudioProcessorEditor::resized()
     mixSlider.setBounds(120, 80, 80, 80);
     delaySlider.setBounds(220, 80, 80, 80);
     cutoffSlider.setBounds(320, 80, 80, 80);
+    saturationSlider.setBounds(420, 80, 80, 80);
     
     bypassButton.setBounds(20, 180, 80, 80);
     SoSButton.setBounds(120, 180, 80, 80);
     filterButton.setBounds(220, 180, 80, 80);
+    saturationButton.setBounds(320, 180, 80, 80);
 }
 
 void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
@@ -162,6 +189,10 @@ void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
     {
         processor.filterCutoff = cutoffSlider.getValue();
     }
+    else if (slider == &saturationSlider)
+    {
+        processor.saturation = saturationSlider.getValue();
+    }
     
 }
 
@@ -178,6 +209,10 @@ void EchoplexAudioProcessorEditor::buttonClicked (Button *button)
     else if (button == &filterButton)
     {
         processor.filterIsIn = ! processor.filterIsIn;
+    }
+    else if (button == &saturationButton)
+    {
+        processor.saturation_active = ! processor.saturation_active;
     }
 }
 

@@ -24,11 +24,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../Source/PluginEditor.cpp"
-            timestampString = "474997015.837094"
+            timestampString = "475380049.114317"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "176"
-            endingLineNumber = "176"
+            startingLineNumber = "207"
+            endingLineNumber = "207"
             landmarkName = "EchoplexAudioProcessorEditor::buttonClicked (Button *button)"
             landmarkType = "5">
          </BreakpointContent>

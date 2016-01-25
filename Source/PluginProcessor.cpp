@@ -151,8 +151,9 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
     float output_sample_feedback;
     int samples_to_interpolate = 4;
     
+    float previousDelay;
     static int delay_change_counter = 0;
-    int param_change_sample_delay = 50000;
+    int param_change_sample_delay = 10000;
     
 
     // This is the place where you'd normally do the guts of your plugin's
@@ -164,19 +165,25 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
         for (int frame = 0; frame < buffer.getNumSamples(); ++frame)
         {
             
-            // Detect change in parameters
+            // Detect change in parameters to prevent glitches
             if (actual_delay != delay_in_samples)
             {
-                if (delay_change_counter >= param_change_sample_delay)
+                
+                if (previousDelay == delay_in_samples)
                 {
-                    actual_delay = delay_in_samples;
-                    delay_change_counter = 0;
-                    printf("%f\n",actual_delay);
+                    delay_change_counter++;
+                    if (delay_change_counter >= param_change_sample_delay)
+                    {
+                        actual_delay = delay_in_samples;
+                    }
+
                 }
                 else
                 {
-                    delay_change_counter++;
+                    delay_change_counter = 0;
                 }
+                
+                previousDelay = delay_in_samples;
             }
 
             // Read the delayed sampled from the circular buffer
@@ -218,6 +225,13 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
             // Write current sample to ring buffer with feedback
             (ringBuf[channel].buffer)[ringBuf[channel].current_index] += current_sample + (feedback * output_sample_feedback);
             
+            // Saturation
+            if (saturation_active)
+            {
+                output_sample = (1/saturation) * atan(saturation*output_sample);
+            }
+            
+            // Audio output
             if (! bypass)
             {
                 // If not bypassed, send output sample to audio output
@@ -316,4 +330,15 @@ float EchoplexAudioProcessor::sinc (float x)
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new EchoplexAudioProcessor();
+}
+
+int EchoplexAudioProcessor::sign (float x)
+{
+    if (x > 0) {
+        return 1;
+    } else if (x < 0) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
