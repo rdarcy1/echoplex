@@ -105,43 +105,32 @@ void EchoplexAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     
-    try
-    {
-        // Create a ring buffer for each input channel
-        int input_chans = getNumInputChannels();
-//        ringBuf = new RingBuffer[input_chans];
-        ringBuf.resize(input_chans);
+    max_delay_time = 2 * getSampleRate();
+    
+    // Create a ring buffer for each input channel
+    int input_chans = getNumInputChannels();
+    ringBuf.resize(input_chans);
 
-        for (int channel = 0; channel < input_chans; ++channel)
+    for (int channel = 0; channel < input_chans; ++channel)
+    {
+        ringBuf[channel].length = max_delay_time + 1;
+        ringBuf[channel].buffer.resize(ringBuf[channel].length, 0.0);
+
+        if (ringBuf[channel].buffer.size() < ringBuf[channel].length)
         {
-//            ringBuf[channel] = *ringbuffer_create(getSampleRate() * 2);
-            ringBuf[channel].length = getSampleRate() * 2;
-            ringBuf[channel].buffer.resize(ringBuf[channel].length, 0.0);
-            //ringBuf[channel].buffer[n];
-            if (ringBuf[channel].buffer.size() < ringBuf[channel].length)
-            {
-            }
-        }
-        
+            NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Error", "Unable to allocate buffer memory.");
 
-    }
-    catch (...)
-    {
-        NativeMessageBox::showMessageBox (AlertWindow::AlertIconType::WarningIcon, "Error", "Unable to allocate memory.");
-        
+        }
     }
     
-    calculate_filter_coeffs(filter_coeffs, filterCutoff);
+    // Calculate inital filter coefficients
+    calculate_filter_coeffs(filterCutoff);
 }
 
 void EchoplexAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
-    
-//    ringbuffer_destroy(ringBuf);
-    
-//    delete[] ringBuf;
 }
 
 void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
@@ -159,11 +148,12 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
     float delayed_sample;
     float current_sample;
     float output_sample;
-    int target_delay = delayTime;
-    float delay_step = 0.01;
+    float output_sample_feedback;
     int samples_to_interpolate = 4;
     
-//    actual_delay = target_delay;
+    static int delay_change_counter = 0;
+    int param_change_sample_delay = 50000;
+    
 
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
@@ -174,46 +164,64 @@ void EchoplexAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
         for (int frame = 0; frame < buffer.getNumSamples(); ++frame)
         {
             
-            // Smoothly slide between delay times
-            if (actual_delay < target_delay)
-                actual_delay += delay_step;
-            else if (actual_delay > target_delay)
-                actual_delay -= delay_step;
+            // Detect change in parameters
+            if (actual_delay != delay_in_samples)
+            {
+                if (delay_change_counter >= param_change_sample_delay)
+                {
+                    actual_delay = delay_in_samples;
+                    delay_change_counter = 0;
+                    printf("%f\n",actual_delay);
+                }
+                else
+                {
+                    delay_change_counter++;
+                }
+            }
 
             // Read the delayed sampled from the circular buffer
             delayed_sample_idx = mod (round((ringBuf[channel].current_index)-(actual_delay)),ringBuf[channel].length);
             
             // SORT THIS OUT
             delayed_sample = lagrange_interpolate(channel, (int)delayed_sample_idx + 1, samples_to_interpolate, 3+fmod(delayed_sample_idx,1));
-            
-            // Apply filter to delayed sample
-            // First coeff is a special case as the delayed sample is interpolated
-            delayed_sample *= filter_coeffs[0];
-            for (int x = 1; x <= filterOrder; x++) {
-                delayed_sample += filter_coeffs[x] * ringBuf[channel].buffer[mod(delayed_sample_idx - x, ringBuf[channel].length)];
-            }
+
             
             // Read the current sample from input buffer
             current_sample = channelData[frame];
-            
-            // Calculate the output sample value
-            output_sample = current_sample + (mix*delayed_sample);
             
             // If sound on sound mode is off, clear the current buffer sample
             if (! soundOnSound)
             {
                 (ringBuf[channel].buffer)[ringBuf[channel].current_index] = 0;
             }
+            else
+            {
+                current_sample += (ringBuf[channel].buffer)[ringBuf[channel].current_index] * 0.1;
+            }
+            
+            // Calculate the output sample value
+            output_sample = (dry_mix*current_sample) + (wet_mix*delayed_sample);
+            
+            // Tape filter
+            if (filterIsIn)
+            {
+                // Apply filter to delayed sample
+                // First coeff is a special case as the delayed sample is interpolated
+                delayed_sample *= filter_coeffs[0];
+                for (int x = 1; x <= filterOrder; x++) {
+                    delayed_sample += filter_coeffs[x] * ringBuf[channel].buffer[mod(delayed_sample_idx - x, ringBuf[channel].length)];
+                }
+            }
+            
+            output_sample_feedback = (dry_mix*current_sample) + (wet_mix*delayed_sample);
             
             // Write current sample to ring buffer with feedback
-            (ringBuf[channel].buffer)[ringBuf[channel].current_index] += current_sample + (feedback * output_sample);
+            (ringBuf[channel].buffer)[ringBuf[channel].current_index] += current_sample + (feedback * output_sample_feedback);
             
             if (! bypass)
             {
                 // If not bypassed, send output sample to audio output
                 channelData[frame] = output_scale_factor * output_sample;
-            } else {
-                printf("%d\t%f\n",channel,channelData[frame]);
             }
             
             // Increment the circular buffer index
@@ -274,28 +282,13 @@ float EchoplexAudioProcessor::lagrange_interpolate (int channel, int idx, int n,
                 temp *= ((p-j)/(i-j));
         }
 
-        sum += ringBuf[channel].buffer[idx + i - n] * temp;
+        sum += ringBuf[channel].buffer[mod(idx + i - n, ringBuf[channel].length)] * temp;
     }
     
     return sum;
 }
-//
-//// Create new ring buffer
-//EchoplexAudioProcessor::RingBuffer* EchoplexAudioProcessor::ringbuffer_create(int length)
-//{
-//        // Allocate memory for struct
-//        RingBuffer *new_buffer = new EchoplexAudioProcessor::RingBuffer;
-//        new_buffer->length  = length;
-//        
-//        // Allocate memory for buffer array
-////        new_buffer->buffer = new float[new_buffer->length];
-//
-//        new_buffer->current_index = 0;
-//        
-//        return new_buffer;
-//}
 
-void EchoplexAudioProcessor::calculate_filter_coeffs (float* filter_coefficients, float cutoff)
+void EchoplexAudioProcessor::calculate_filter_coeffs (float cutoff)
 {
     float window_coefficient;
     float fourier_coefficient;
@@ -308,17 +301,10 @@ void EchoplexAudioProcessor::calculate_filter_coeffs (float* filter_coefficients
         
         fourier_coefficient = ((2*cutoff)/sample_rate) * sinc(((2*x - filterOrder)*cutoff)/sample_rate);
         
-        filter_coefficients[x] = window_coefficient * fourier_coefficient;
+        filter_coeffs[x] = window_coefficient * fourier_coefficient;
         
-        printf("%f",filter_coefficients[x]);
     }
 }
-
-//void EchoplexAudioProcessor::ringbuffer_destroy(RingBuffer *buffer_to_destroy)
-//{
-//    delete[] buffer_to_destroy->buffer;
-//    delete[] buffer_to_destroy;
-//}
 
 float EchoplexAudioProcessor::sinc (float x)
 {

@@ -55,8 +55,8 @@ private:
     TextButton SoSButton;
     Label SoSLabel;
     
-    TextButton clipButton;
-    Label clipLabel;
+    TextButton filterButton;
+    Label filterLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EchoplexAudioProcessorEditor)
 };

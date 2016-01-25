@@ -38,7 +38,7 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     // Mix
     addAndMakeVisible (mixSlider);
     mixSlider.setSliderStyle (Slider::Rotary);
-    mixSlider.setRange(0.0, 1.0);
+    mixSlider.setRange(-1.0, 1.0);
     mixSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     mixSlider.setPopupDisplayEnabled (true, this);
     mixSlider.setTextValueSuffix (" mix");
@@ -53,11 +53,11 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     // Delay time
     addAndMakeVisible (delaySlider);
     delaySlider.setSliderStyle (Slider::Rotary);
-    delaySlider.setRange(0.0, 10000);
+    delaySlider.setRange(0.0, 2000.0);
     delaySlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     delaySlider.setPopupDisplayEnabled (true, this);
-    delaySlider.setTextValueSuffix (" delay");
-    delaySlider.setValue(processor.delayTime);
+    delaySlider.setTextValueSuffix (" ms");
+    delaySlider.setValue((processor.delay_in_samples * 1000) / processor.getSampleRate());  // Convert delay in samples to delay in ms
     delaySlider.addListener (this);
     
     addAndMakeVisible (delayLabel);
@@ -68,10 +68,10 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     // Filter cutoff
     addAndMakeVisible (cutoffSlider);
     cutoffSlider.setSliderStyle (Slider::Rotary);
-    cutoffSlider.setRange(0.0, 1.0);
+    cutoffSlider.setRange(10, 15000);
     cutoffSlider.setTextBoxStyle (Slider::NoTextBox, false, 90, 0);
     cutoffSlider.setPopupDisplayEnabled (true, this);
-    cutoffSlider.setTextValueSuffix (" cutoff");
+    cutoffSlider.setTextValueSuffix (" Hz");
     cutoffSlider.setValue(processor.filterCutoff);
     cutoffSlider.addListener (this);
     
@@ -101,14 +101,14 @@ EchoplexAudioProcessorEditor::EchoplexAudioProcessorEditor (EchoplexAudioProcess
     SoSLabel.setJustificationType(Justification::centredTop);
     
     // Clip indicator
-    addAndMakeVisible (clipButton);
-    clipButton.setClickingTogglesState(true);
-    clipButton.addListener (this);
+    addAndMakeVisible (filterButton);
+    filterButton.setClickingTogglesState(true);
+    filterButton.addListener (this);
     
-    addAndMakeVisible (delayLabel);
-    clipLabel.setText ("clip", dontSendNotification);
-    clipLabel.attachToComponent (&clipButton, false);
-    clipLabel.setJustificationType(Justification::centredTop);
+    addAndMakeVisible (filterLabel);
+    filterLabel.setText ("Filter Bypass", dontSendNotification);
+    filterLabel.attachToComponent (&filterButton, false);
+    filterLabel.setJustificationType(Justification::centredTop);
     
 }
 
@@ -138,7 +138,7 @@ void EchoplexAudioProcessorEditor::resized()
     
     bypassButton.setBounds(20, 180, 80, 80);
     SoSButton.setBounds(120, 180, 80, 80);
-    clipButton.setBounds(220, 180, 80, 80);
+    filterButton.setBounds(220, 180, 80, 80);
 }
 
 void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
@@ -150,10 +150,13 @@ void EchoplexAudioProcessorEditor::sliderValueChanged (Slider* slider)
     else if (slider == &mixSlider)
     {
         processor.mix = mixSlider.getValue();
+        processor.dry_mix = -(0.5 * processor.mix) + 0.5;
+        processor.wet_mix = (0.5 * processor.mix) + 0.5;
     }
     else if (slider == &delaySlider)
     {
-        processor.delayTime = delaySlider.getValue();
+        // Convert delay in ms to delay in samples
+        processor.delay_in_samples = (delaySlider.getValue() / 1000.0) * processor.getSampleRate();
     }
     else if (slider == &cutoffSlider)
     {
@@ -172,9 +175,9 @@ void EchoplexAudioProcessorEditor::buttonClicked (Button *button)
     {
         processor.soundOnSound = ! processor.soundOnSound;
     }
-    else if (button == &clipButton)
+    else if (button == &filterButton)
     {
-        clipButton.setState(Button::ButtonState::buttonNormal);
+        processor.filterIsIn = ! processor.filterIsIn;
     }
 }
 

@@ -23,13 +23,13 @@
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "../../Source/PluginProcessor.cpp"
-            timestampString = "474906658.355388"
+            filePath = "../../Source/PluginEditor.cpp"
+            timestampString = "474997015.837094"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "184"
-            endingLineNumber = "184"
-            landmarkName = "EchoplexAudioProcessor::processBlock (AudioSampleBuffer&amp; buffer, MidiBuffer&amp; midiMessages)"
+            startingLineNumber = "176"
+            endingLineNumber = "176"
+            landmarkName = "EchoplexAudioProcessorEditor::buttonClicked (Button *button)"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>

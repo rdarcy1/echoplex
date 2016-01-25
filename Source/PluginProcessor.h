@@ -67,17 +67,21 @@ public:
     
     // Echoplex variables
     double feedback = 0.5;
-    double mix = 1;
-    double delayTime = 50;
+    float mix = 0;
+    float dry_mix = -(0.5 * mix) + 0.5;
+    float wet_mix = (0.5 * mix) + 0.5;
+    float delay_in_samples = 5000;
+    int max_delay_time;
     
     double filterCutoff = 1000;
+    bool filterIsIn = true;
     
     bool bypass = false;
     bool soundOnSound = false;
     
     // Output variables
-    float output_scale_factor = 0.3;
-    bool hasClipped = false;
+    float output_scale_factor = 0.6;
+
     
     
 
@@ -85,7 +89,6 @@ private:
     //==============================================================================
     
     int mod (int, int);
-    float lagrange_interpolate (int, int, int, float);
     
     // Ring buffer operation functions
     RingBuffer *ringbuffer_create (int);
@@ -103,7 +106,12 @@ private:
     // Filter coefficients
     static const int filterOrder = 126;
     float filter_coeffs[126];
-    void calculate_filter_coeffs (float *, float);
+    void calculate_filter_coeffs (float);
+
+    // Intepolation function
+    float lagrange_interpolate (int, int, int, float);
+
+
     
     // Maths functions
     float sinc (float);
